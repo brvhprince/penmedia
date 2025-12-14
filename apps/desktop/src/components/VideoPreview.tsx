@@ -16,19 +16,31 @@ export function VideoPreview({ videoRef }: VideoPreviewProps) {
     if (connectionStatus !== 'connected') return;
 
     const unlisten = listen<string>('video-frame', (event) => {
+      console.log('video frame received, payload length:', event.payload.length);
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      if (!canvas) {
+        console.log('Canvas ref is null');
+        return;
+      }
 
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (!ctx) {
+        console.log('Cannot get canvas context');
+        return;
+      }
 
       // Decode base64 frame
       const base64Data = event.payload;
       const img = new Image();
       img.onload = () => {
+        console.log('Image loaded successfully:', img.width, 'x', img.height);
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
+      };
+      img.onerror = (error) => {
+        console.error('Failed to load image:', error);
+        console.log('Base64 preview (first 100 chars):', base64Data.substring(0, 100));
       };
       img.src = `data:image/jpeg;base64,${base64Data}`;
     });

@@ -1,12 +1,12 @@
-import type {
-  DeviceInfo,
-  VideoSettings,
-  FilterSettings,
-  CameraControls,
-  ProtocolMessage,
-  SettingsUpdateMessage,
-  ControlCommandMessage,
-  StatusUpdateMessage,
+import {
+    DeviceInfo,
+    VideoSettings,
+    FilterSettings,
+    CameraControls,
+    ProtocolMessage,
+    SettingsUpdateMessage,
+    ControlCommandMessage,
+    StatusUpdateMessage, ConnectionStatus,
 } from '@penmedia/shared-types';
 import {
   WebSocketConnection,
@@ -28,7 +28,7 @@ class StreamingServiceImpl {
   private lastStatTime = 0;
   private droppedFrames = 0;
   private onStatsUpdate?: (fps: number, bitrate: number, dropped: number) => void;
-  private onStatusChange?: (status: string) => void;
+  private onStatusChange?: (status: ConnectionStatus) => void;
   private onSettingsReceived?: (settings: Partial<VideoSettings>) => void;
   private onControlCommand?: (command: string) => void;
 
@@ -152,16 +152,8 @@ class StreamingServiceImpl {
         this.nextSequence()
       );
 
-      await this.connection.send({
-        type: 'video_frame',
-        timestamp: Date.now(),
-        sequenceNumber: this.nextSequence(),
-        data: frameData,
-        width,
-        height,
-        format,
-        keyFrame,
-      });
+      // Send the pre-encoded binary frame directly
+      await this.connection.send(frameData as any);
 
       this.frameCount++;
       this.updateStats();
@@ -193,7 +185,7 @@ class StreamingServiceImpl {
 
   setCallbacks(callbacks: {
     onStatsUpdate?: (fps: number, bitrate: number, dropped: number) => void;
-    onStatusChange?: (status: string) => void;
+    onStatusChange?: (status: ConnectionStatus) => void;
     onSettingsReceived?: (settings: Partial<VideoSettings>) => void;
     onControlCommand?: (command: string) => void;
   }): void {

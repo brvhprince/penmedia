@@ -129,13 +129,19 @@ pub async fn handle_connection(
                                     handle_handshake(&data, &connection, &msg_tx).await?;
                                 }
                                 MessageType::VideoFrame => {
-                                    // Forward to virtual camera
-                                    let tx_opt = {
-                                        let conn = connection.read().await;
-                                        conn.frame_tx().cloned()
-                                    };
-                                    if let Some(tx) = tx_opt {
-                                        let _ = tx.send(data.to_vec()).await;
+                                    // Extract just the JPEG data (skip 17 byte base header + 6 byte frame header)
+                                    const FRAME_DATA_OFFSET: usize = 23;
+                                    if data.len() > FRAME_DATA_OFFSET {
+                                        let jpeg_data = &data[FRAME_DATA_OFFSET..];
+
+                                        // Forward to virtual camera
+                                        let tx_opt = {
+                                            let conn = connection.read().await;
+                                            conn.frame_tx().cloned()
+                                        };
+                                        if let Some(tx) = tx_opt {
+                                            let _ = tx.send(jpeg_data.to_vec()).await;
+                                        }
                                     }
                                 }
                                 MessageType::StatusUpdate => {

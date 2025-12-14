@@ -4,12 +4,10 @@ import {
   Camera,
   useCameraDevice,
   useCameraFormat,
-  useFrameProcessor,
   type CameraPosition,
 } from 'react-native-vision-camera';
-import { runOnJS } from 'react-native-reanimated';
 import Reanimated from 'react-native-reanimated';
-import { convertFrameToBase64 } from 'vision-camera-base64';
+import RNFS from 'react-native-fs';
 import { useAppStore } from '@store/appStore';
 import { StreamingService } from '@services/StreamingService';
 
@@ -29,39 +27,51 @@ export function CameraPreview({ isActive }: CameraPreviewProps) {
     { fps: videoSettings.frameRate },
   ]);
 
-  const sendFrame = useCallback(async (base64: string, width: number, height: number) => {
-    try {
-      // Convert base64 to ArrayBuffer
-      const binaryString = atob(base64);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
+  // Capture and send frames using takePhoto
+  useEffect(() => {
+    if (!isStreaming || !cameraRef.current) return;
 
-      await StreamingService.sendFrame(
-        bytes.buffer,
-        width,
-        height,
-        'jpeg',
-        false
-      );
-    } catch (error) {
-      console.error('Failed to send frame:', error);
-    }
-  }, []);
+    let isCapturing = false;
+    const captureInterval = setInterval(async () => {
+      if (isCapturing) return; // Skip if previous capture still processing
 
-  const frameProcessor = useFrameProcessor((frame) => {
-    'worklet';
-    if (isStreaming) {
+      isCapturing = true;
       try {
-        const base64 = convertFrameToBase64(frame);
-        runOnJS(sendFrame)(base64, frame.width, frame.height);
+        const photo = await cameraRef.current?.takePhoto({
+          qualityPrioritization: 'speed',
+          enableShutterSound: false,
+        });
+
+        if (photo) {
+          // Read as base64 and convert to ArrayBuffer
+          const base64 = await RNFS.readFile(photo.path, 'base64');
+          const binaryString = atob(base64);
+          const len = binaryString.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+
+          await StreamingService.sendFrame(
+            bytes.buffer,
+            photo.width,
+            photo.height,
+            'jpeg',
+            false
+          );
+
+          // Clean up
+          await RNFS.unlink(photo.path).catch(() => {});
+        }
       } catch (error) {
-        console.error('Frame processing error:', error);
+        console.error('Frame capture error:', error);
+      } finally {
+        isCapturing = false;
       }
-    }
-  }, [isStreaming, sendFrame]);
+    }, Math.max(33, 1000 / videoSettings.frameRate)); // Min 33ms (30fps max)
+
+    return () => clearInterval(captureInterval);
+  }, [isStreaming, videoSettings.frameRate]);
 
   if (!device) {
     return (
@@ -79,13 +89,11 @@ export function CameraPreview({ isActive }: CameraPreviewProps) {
         device={device}
         format={format}
         isActive={isActive}
-        frameProcessor={frameProcessor}
+        photo={true}
         zoom={cameraControls.zoom}
         exposure={cameraControls.exposure}
         torch={videoSettings.flashEnabled ? 'on' : 'off'}
         enableZoomGesture
-        video
-        audio={false}
       />
     </View>
   );

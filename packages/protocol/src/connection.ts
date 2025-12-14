@@ -17,7 +17,6 @@ import {
   PING_INTERVAL,
   PING_TIMEOUT,
 } from './constants';
-import * as console from "node:console";
 
 export interface ConnectionEvents {
   onStatusChange: (status: ConnectionStatus) => void;
@@ -50,7 +49,7 @@ export abstract class BaseConnection {
 
   abstract connect(): Promise<void>;
   abstract disconnect(): Promise<void>;
-  abstract send(message: ProtocolMessage): Promise<void>;
+  abstract send(message: ProtocolMessage | ArrayBuffer): Promise<void>;
 
   getStatus(): ConnectionStatus {
     return this.status;
@@ -244,10 +243,17 @@ export class WebSocketConnection extends BaseConnection {
     this.connectPromise = null;
   }
 
-  async send(message: ProtocolMessage): Promise<void> {
+  async send(message: ProtocolMessage | ArrayBuffer): Promise<void> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       throw new Error('WebSocket not connected');
     }
+
+    // If it's already an ArrayBuffer (pre-encoded), send it directly
+    if (message instanceof ArrayBuffer) {
+      this.ws.send(message);
+      return;
+    }
+
     const buffer = encodeMessage(message);
     this.ws.send(buffer);
   }

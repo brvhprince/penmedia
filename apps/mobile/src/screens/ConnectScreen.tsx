@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -10,18 +10,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
-import { QRCodeDisplay } from '@components/index.ts';
 import { useAppStore } from '@store/appStore';
 import { StreamingService } from '@services/index.ts';
 import { DEFAULT_PORT } from '@penmedia/protocol';
 
-type ConnectionMode = 'qr' | 'manual';
 
 export function ConnectScreen() {
-  const [mode, setMode] = useState<ConnectionMode>('qr');
   const [ipAddress, setIpAddress] = useState('');
   const [port, setPort] = useState(DEFAULT_PORT.toString());
-  const [localIp, setLocalIp] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
 
   const { setConnectionStatus, connectionStatus, videoSettings } = useAppStore();
@@ -56,18 +52,17 @@ export function ConnectScreen() {
     try {
       const state = await NetInfo.fetch();
       // Try to get IP address from WiFi or Ethernet connection
+        console.log({state});
       const details = state.details as any;
       const ip = details?.ipAddress;
       if (ip && typeof ip === 'string') {
-        setLocalIp(ip);
+        setIpAddress(ip);
         console.log('Local IP:', ip);
       } else {
         console.warn('Could not get local IP address');
-        setLocalIp(null);
       }
     } catch (error) {
       console.error('Failed to get local IP:', error);
-      setLocalIp(null);
     }
   };
 
@@ -83,7 +78,7 @@ export function ConnectScreen() {
     try {
       await StreamingService.connect(
         ipAddress,
-        parseInt(port, 10),
+        Number.parseInt(port, 10),
         videoSettings
       );
       // Status will be updated via the onStatusChange callback

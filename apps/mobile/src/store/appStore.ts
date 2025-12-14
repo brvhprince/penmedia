@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { createStore, useStore } from 'zustand';
 import type {
   ConnectionStatus,
   VideoSettings,
@@ -78,7 +78,8 @@ const initialState = {
   droppedFrames: 0,
 };
 
-export const useAppStore = create<AppState>((set, get) => ({
+// Create store instance once
+const appStore = createStore<AppState>((set, get) => ({
   ...initialState,
 
   setConnectionStatus: status => set({ connectionStatus: status }),
@@ -118,3 +119,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   reset: () => set(initialState),
 }));
+
+// Export hook that uses the store
+export const useAppStore = <T,>(selector?: (state: AppState) => T) =>
+  useStore(appStore, selector as any) as T extends undefined ? AppState : T;
