@@ -1,0 +1,129 @@
+.panel {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.notInstalled {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.notInstalled p {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin-bottom: 16px;
+}
+
+.installBtn {
+  padding: 10px 24px;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+
+.installBtn:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.statusInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cameraName {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.statusBadge {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.statusBadge.active {
+  color: var(--color-primary);
+}
+
+.toggleBtn {
+  padding: 8px 20px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.toggleBtn.start {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.toggleBtn.start:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.toggleBtn.stop {
+  background: transparent;
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+}
+
+.toggleBtn.stop:hover:not(:disabled) {
+  background: rgba(244, 67, 54, 0.1);
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-top: 12px;
+}
+
+.info {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: var(--radius-md);
+}
+
+.info p {
+  font-size: 13px;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.error {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(244, 67, 54, 0.1);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  color: var(--color-error);
+  font-size: 13px;
+}

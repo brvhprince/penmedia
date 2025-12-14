@@ -1,0 +1,35 @@
+{
+  "name": "penmedia",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Use your phone's camera as a webcam for your PC",
+  "keywords": ["webcam", "phone-camera", "virtual-camera", "video-streaming"],
+  "license": "MIT",
+  "author": "PenMedia Team",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "dev:mobile": "pnpm --filter @penmedia/mobile dev",
+    "dev:desktop": "pnpm --filter @penmedia/desktop dev",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "check": "biome check .",
+    "check:fix": "biome check --write .",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.0",
+    "@types/node": "^20.10.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.3.0"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

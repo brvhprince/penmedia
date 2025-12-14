@@ -1,0 +1,52 @@
+[package]
+name = "penmedia"
+version = "0.1.0"
+description = "Use your phone's camera as a webcam for your PC"
+authors = ["PenMedia Team"]
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/penmedia/penmedia"
+
+[lib]
+name = "penmedia_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.0", features = ["tray-icon"] }
+tauri-plugin-shell = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.35", features = ["full"] }
+tokio-tungstenite = "0.21"
+futures-util = "0.3"
+uuid = { version = "1.6", features = ["v4"] }
+log = "0.4"
+env_logger = "0.10"
+thiserror = "1.0"
+parking_lot = "0.12"
+image = { version = "0.24", features = ["png"] }
+qrcode = "0.13"
+local-ip-address = "0.5"
+base64 = "0.21"
+dirs = "5.0"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.52", features = [
+    "Win32_Media_MediaFoundation",
+    "Win32_System_Com",
+    "Win32_Foundation",
+] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+# CoreMediaIO for virtual camera on macOS
+core-foundation = "0.9"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+v4l = "0.14"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

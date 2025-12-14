@@ -1,0 +1,13 @@
+edition = "2021"
+max_width = 100
+tab_spaces = 4
+use_small_heuristics = "Default"
+newline_style = "Auto"
+use_field_init_shorthand = true
+use_try_shorthand = true
+force_multiline_blocks = false
+format_strings = false
+imports_granularity = "Module"
+group_imports = "StdExternalCrate"
+reorder_imports = true
+reorder_modules = true
