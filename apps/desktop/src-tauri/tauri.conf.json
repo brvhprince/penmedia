@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "PenMedia",
   "version": "0.1.0",
-  "identifier": "com.penmedia.app",
+  "identifier": "com.pennycodes.penmedia",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -29,8 +29,10 @@
       "csp": null
     },
     "trayIcon": {
-      "iconPath": "icons/icon.png",
-      "iconAsTemplate": true
+      "iconPath": "icons/64x64.png",
+      "title": "PenMedia",
+      "tooltip": "PenMedia",
+      "id": "penmedia"
     }
   },
   "bundle": {
@@ -45,6 +47,7 @@
     ],
     "category": "Utility",
     "shortDescription": "Use your phone as a webcam",
+    "copyright": "All rights reserved",
     "longDescription": "PenMedia allows you to use your phone's camera as a virtual webcam on your computer. Stream high-quality video with filters and effects.",
     "windows": {
       "certificateThumbprint": null,

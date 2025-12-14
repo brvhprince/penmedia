@@ -1,12 +1,9 @@
-use futures_util::{SinkExt, StreamExt};
-use parking_lot::RwLock;
-use std::sync::Arc;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc;
 use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
 use crate::error::{AppError, AppResult};
-use crate::protocol::{DeviceInfo, HandshakeAckMessage, HandshakeMessage, MessageType, VideoSettings, PROTOCOL_VERSION};
+use crate::protocol::{DeviceInfo, HandshakeAckMessage, MessageType, VideoSettings};
 
 pub type WsStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
@@ -56,6 +53,10 @@ impl Connection {
 
     pub fn set_ws_tx(&mut self, tx: mpsc::Sender<Message>) {
         self.ws_tx = Some(tx);
+    }
+
+    pub fn frame_tx(&self) -> Option<&mpsc::Sender<Vec<u8>>> {
+        self.frame_tx.as_ref()
     }
 
     pub async fn send_message(&self, msg: Message) -> AppResult<()> {

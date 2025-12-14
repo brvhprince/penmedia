@@ -2,10 +2,10 @@
 name = "penmedia"
 version = "0.1.0"
 description = "Use your phone's camera as a webcam for your PC"
-authors = ["PenMedia Team"]
+authors = ["Pennycodes"]
 edition = "2021"
 license = "MIT"
-repository = "https://github.com/penmedia/penmedia"
+repository = "https://github.com/pennycodes/penmedia"
 
 [lib]
 name = "penmedia_lib"

@@ -1,11 +1,9 @@
-use parking_lot::RwLock;
 use std::sync::Arc;
 use tauri::State;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, RwLock};
 
 use crate::config::AppConfig;
 use crate::connection::Connection;
-use crate::error::{AppError, AppResult};
 use crate::protocol::DeviceInfo;
 use crate::server::{handle_connection, Server, ServerInfo};
 use crate::virtual_camera::{VirtualCamera, VirtualCameraInfo};
@@ -39,9 +37,9 @@ pub struct ConnectionResult {
 
 #[tauri::command]
 pub async fn connect_to_device(
-    host: String,
-    port: u16,
-    state: State<'_, AppState>,
+    _host: String,
+    _port: u16,
+    _state: State<'_, AppState>,
 ) -> Result<ConnectionResult, String> {
     // For now, we use the server mode where the phone connects to us
     // This command is for manual connection mode
@@ -50,28 +48,36 @@ pub async fn connect_to_device(
 
 #[tauri::command]
 pub async fn disconnect_from_device(state: State<'_, AppState>) -> Result<(), String> {
-    let mut connection = state.connection.write();
+    let mut connection = state.connection.write().await;
     connection.clear();
     Ok(())
 }
 
 #[tauri::command]
 pub async fn start_server(state: State<'_, AppState>) -> Result<ServerInfo, String> {
-    let config = state.config.read();
-    let port = config.default_port;
-    drop(config);
+    let port = {
+        let config = state.config.read().await;
+        config.default_port
+    };
 
-    let mut server = state.server.write();
+    // Start server and get info
+    let info = {
+        state.server.write().await.start(port).await.map_err(|e| e.to_string())?
+    };
 
-    let info = server.start(port).await.map_err(|e| e.to_string())?;
+    // Take listener after starting
+    let listener = {
+        let mut server = state.server.write().await;
+        server.take_listener()
+    };
 
     // Take the listener and spawn the accept loop
-    if let Some(listener) = server.take_listener() {
+    if let Some(listener) = listener {
         let connection = state.connection.clone();
-        let (frame_tx, frame_rx) = mpsc::channel::<Vec<u8>>(100);
+        let (frame_tx, _frame_rx) = mpsc::channel::<Vec<u8>>(100);
 
         // Store the frame sender
-        *state.frame_tx.write() = Some(frame_tx.clone());
+        *state.frame_tx.write().await = Some(frame_tx.clone());
 
         tokio::spawn(async move {
             loop {
@@ -99,14 +105,14 @@ pub async fn start_server(state: State<'_, AppState>) -> Result<ServerInfo, Stri
 
 #[tauri::command]
 pub async fn stop_server(state: State<'_, AppState>) -> Result<(), String> {
-    let mut server = state.server.write();
+    let mut server = state.server.write().await;
     server.stop();
     Ok(())
 }
 
 #[tauri::command]
 pub async fn get_server_info(state: State<'_, AppState>) -> Result<Option<ServerInfo>, String> {
-    let server = state.server.read();
+    let server = state.server.read().await;
     Ok(server.info().map(|i| ServerInfo {
         ip: i.ip.clone(),
         port: i.port,
@@ -117,13 +123,13 @@ pub async fn get_server_info(state: State<'_, AppState>) -> Result<Option<Server
 pub async fn get_virtual_camera_status(
     state: State<'_, AppState>,
 ) -> Result<Option<VirtualCameraInfo>, String> {
-    let camera = state.virtual_camera.read();
+    let camera = state.virtual_camera.read().await;
     Ok(camera.check_installed())
 }
 
 #[tauri::command]
 pub async fn install_virtual_camera(state: State<'_, AppState>) -> Result<(), String> {
-    let mut camera = state.virtual_camera.write();
+    let mut camera = state.virtual_camera.write().await;
     camera.install().await.map_err(|e| e.to_string())
 }
 
@@ -133,37 +139,37 @@ pub async fn start_virtual_camera(state: State<'_, AppState>) -> Result<(), Stri
     let (tx, rx) = mpsc::channel::<Vec<u8>>(100);
 
     // Store the sender
-    *state.frame_tx.write() = Some(tx);
+    *state.frame_tx.write().await = Some(tx);
 
     // Start the virtual camera with the receiver
-    let mut camera = state.virtual_camera.write();
+    let mut camera = state.virtual_camera.write().await;
     camera.start(rx).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn stop_virtual_camera(state: State<'_, AppState>) -> Result<(), String> {
-    let mut camera = state.virtual_camera.write();
+    let mut camera = state.virtual_camera.write().await;
     camera.stop();
-    *state.frame_tx.write() = None;
+    *state.frame_tx.write().await = None;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn get_config(state: State<'_, AppState>) -> Result<AppConfig, String> {
-    let config = state.config.read();
+    let config = state.config.read().await;
     Ok(config.clone())
 }
 
 #[tauri::command]
 pub async fn save_config(config: AppConfig, state: State<'_, AppState>) -> Result<(), String> {
     config.save().map_err(|e| e.to_string())?;
-    *state.config.write() = config;
+    *state.config.write().await = config;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn generate_qr_code(state: State<'_, AppState>) -> Result<String, String> {
-    let server = state.server.read();
+    let server = state.server.read().await;
     let info = server
         .info()
         .ok_or_else(|| "Server not running".to_string())?;
@@ -187,14 +193,8 @@ pub async fn generate_qr_code(state: State<'_, AppState>) -> Result<String, Stri
     let image = code.render::<image::Luma<u8>>().build();
 
     let mut png_bytes = Vec::new();
-    let encoder = image::codecs::png::PngEncoder::new(&mut png_bytes);
-    encoder
-        .encode(
-            image.as_raw(),
-            image.width(),
-            image.height(),
-            image::ColorType::L8.into(),
-        )
+    image
+        .write_to(&mut std::io::Cursor::new(&mut png_bytes), image::ImageFormat::Png)
         .map_err(|e| e.to_string())?;
 
     use base64::Engine;

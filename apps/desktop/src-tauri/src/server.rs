@@ -9,8 +9,10 @@ use uuid::Uuid;
 
 use crate::connection::{create_handshake_ack, default_video_settings, Connection, ConnectionInfo};
 use crate::error::{AppError, AppResult};
-use crate::protocol::{DeviceInfo, HandshakeMessage, MessageType};
+use crate::protocol::{HandshakeMessage, MessageType};
+use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerInfo {
     pub ip: String,
     pub port: u16,
@@ -129,8 +131,11 @@ pub async fn handle_connection(
                                 }
                                 MessageType::VideoFrame => {
                                     // Forward to virtual camera
-                                    let conn = connection.read();
-                                    if let Some(tx) = &conn.frame_tx {
+                                    let tx_opt = {
+                                        let conn = connection.read();
+                                        conn.frame_tx().cloned()
+                                    };
+                                    if let Some(tx) = tx_opt {
                                         let _ = tx.send(data.to_vec()).await;
                                     }
                                 }
