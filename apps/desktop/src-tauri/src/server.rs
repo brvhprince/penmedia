@@ -1,8 +1,9 @@
 use futures_util::{SinkExt, StreamExt};
+use parking_lot::RwLock;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::mpsc;
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
 
@@ -102,7 +103,7 @@ pub async fn handle_connection(
 
     // Store the sender in connection
     {
-        let mut conn = connection.write().await;
+        let mut conn = connection.write();
         conn.set_ws_tx(msg_tx.clone());
         conn.set_frame_tx(frame_tx);
     }
@@ -131,7 +132,7 @@ pub async fn handle_connection(
                                 MessageType::VideoFrame => {
                                     // Forward to virtual camera
                                     let tx_opt = {
-                                        let conn = connection.read().await;
+                                        let conn = connection.read();
                                         conn.frame_tx().cloned()
                                     };
                                     if let Some(tx) = tx_opt {
@@ -169,7 +170,7 @@ pub async fn handle_connection(
 
     // Cleanup
     write_handle.abort();
-    connection.write().await.clear();
+    connection.write().clear();
 
     log::info!("Connection from {} closed", addr);
     Ok(())
@@ -221,7 +222,7 @@ async fn handle_handshake(
 
     // Store connection info
     {
-        let mut conn = connection.write().await;
+        let mut conn = connection.write();
         conn.set_info(ConnectionInfo {
             session_id: session_id.clone(),
             device_info: handshake.device_info,
