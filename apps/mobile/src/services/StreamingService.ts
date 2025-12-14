@@ -86,15 +86,18 @@ class StreamingServiceImpl {
 
     const events: ConnectionEvents = {
       onStatusChange: status => {
+          console.log(`Connection status: ${status}`);
         this.onStatusChange?.(status);
       },
       onMessage: message => {
+          console.log({message})
         this.handleMessage(message);
       },
       onError: error => {
         console.error('Connection error:', error);
       },
       onLatencyUpdate: latency => {
+          console.log(`Connection latency: ${latency}`);
         // Handle latency updates
       },
     };

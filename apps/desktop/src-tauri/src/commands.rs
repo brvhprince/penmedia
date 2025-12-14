@@ -1,9 +1,10 @@
 use std::sync::Arc;
-use tauri::State;
+use base64::Engine;
+use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::{mpsc, RwLock};
 
 use crate::config::AppConfig;
-use crate::connection::Connection;
+use crate::connection::{Connection, ConnectionInfo};
 use crate::protocol::DeviceInfo;
 use crate::server::{handle_connection, Server, ServerInfo};
 use crate::virtual_camera::{VirtualCamera, VirtualCameraInfo};
@@ -47,6 +48,12 @@ pub async fn connect_to_device(
 }
 
 #[tauri::command]
+pub async fn get_connection_info(state: State<'_, AppState>) -> Result<Option<ConnectionInfo>, String> {
+    let connection = state.connection.read().await;
+    Ok(connection.info().cloned())
+}
+
+#[tauri::command]
 pub async fn disconnect_from_device(state: State<'_, AppState>) -> Result<(), String> {
     let mut connection = state.connection.write().await;
     connection.clear();
@@ -54,7 +61,7 @@ pub async fn disconnect_from_device(state: State<'_, AppState>) -> Result<(), St
 }
 
 #[tauri::command]
-pub async fn start_server(state: State<'_, AppState>) -> Result<ServerInfo, String> {
+pub async fn start_server(app: AppHandle, state: State<'_, AppState>) -> Result<ServerInfo, String> {
     let port = {
         let config = state.config.read().await;
         config.default_port
@@ -74,10 +81,22 @@ pub async fn start_server(state: State<'_, AppState>) -> Result<ServerInfo, Stri
     // Take the listener and spawn the accept loop
     if let Some(listener) = listener {
         let connection = state.connection.clone();
-        let (frame_tx, _frame_rx) = mpsc::channel::<Vec<u8>>(100);
+        let (frame_tx, mut frame_rx) = mpsc::channel::<Vec<u8>>(100);
 
         // Store the frame sender
         *state.frame_tx.write().await = Some(frame_tx.clone());
+
+        // Spawn task to receive frames and emit to frontend
+        let app_handle = app.clone();
+        tokio::spawn(async move {
+            while let Some(frame_data) = frame_rx.recv().await {
+                // Convert frame data to base64 for frontend
+                let base64_frame = base64::engine::general_purpose::STANDARD.encode(&frame_data);
+                if let Err(e) = app_handle.emit("video-frame", base64_frame) {
+                    log::error!("Failed to emit video frame: {}", e);
+                }
+            }
+        });
 
         tokio::spawn(async move {
             loop {

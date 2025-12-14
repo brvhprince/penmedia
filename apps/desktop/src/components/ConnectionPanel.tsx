@@ -1,15 +1,56 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStore } from '../store/appStore';
 import styles from './ConnectionPanel.module.css';
+
+interface ConnectionInfo {
+  session_id: string;
+  device_info: {
+    id: string;
+    name: string;
+    platform: string;
+  };
+  connected_at: number;
+}
 
 export function ConnectionPanel() {
   const [ipAddress, setIpAddress] = useState('');
   const [port, setPort] = useState('8765');
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [serverInfo, setServerInfo] = useState<{ ip: string; port: number } | null>(null);
 
   const { connectionStatus, setConnectionStatus, setConnectedDevice } = useAppStore();
+
+  // Poll for connection status
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const info = await invoke<ConnectionInfo | null>('get_connection_info');
+        if (info) {
+          console.log('Device connected:', info);
+          setConnectionStatus('connected');
+          setConnectedDevice({
+            sessionId: info.session_id,
+            deviceInfo: info.device_info as never,
+            connectedAt: info.connected_at,
+          });
+        } else if (connectionStatus === 'connected') {
+          setConnectionStatus('disconnected');
+          setConnectedDevice(null);
+        }
+      } catch (err) {
+        console.error('Failed to get connection info:', err);
+      }
+    };
+
+    // Check immediately
+    checkConnection();
+
+    // Then poll every 2 seconds
+    const interval = setInterval(checkConnection, 2000);
+    return () => clearInterval(interval);
+  }, [connectionStatus, setConnectionStatus, setConnectedDevice]);
 
   const handleConnect = async () => {
     if (!ipAddress) {
@@ -52,8 +93,10 @@ export function ConnectionPanel() {
 
   const handleStartServer = async () => {
     try {
-      const serverInfo = await invoke<{ ip: string; port: number }>('start_server');
-      console.log('Server started:', serverInfo);
+      const info = await invoke<{ ip: string; port: number }>('start_server');
+      console.log('Server started:', info);
+      setServerInfo(info);
+      setError(null);
     } catch (err) {
         console.error({err})
       setError(err instanceof Error ? err.message : 'Failed to start server');
@@ -82,50 +125,34 @@ export function ConnectionPanel() {
       <div className={styles.section}>
         <h4 className={styles.sectionTitle}>Start Server (Recommended)</h4>
         <p className={styles.sectionDesc}>
-          Start a server and scan the QR code from your phone
+          Start a server and connect from your phone using this information
         </p>
-        <button className={styles.primaryBtn} onClick={handleStartServer}>
-          Start Server
-        </button>
-      </div>
-
-      <div className={styles.divider}>
-        <span>or</span>
-      </div>
-
-      <div className={styles.section}>
-        <h4 className={styles.sectionTitle}>Connect Manually</h4>
-        <div className={styles.form}>
-          <div className={styles.field}>
-            <label>Phone IP Address</label>
-            <input
-              type="text"
-              value={ipAddress}
-              onChange={(e) => setIpAddress(e.target.value)}
-              placeholder="192.168.1.100"
-              disabled={isConnecting}
-            />
-          </div>
-          <div className={styles.field}>
-            <label>Port</label>
-            <input
-              type="text"
-              value={port}
-              onChange={(e) => setPort(e.target.value)}
-              placeholder="8765"
-              disabled={isConnecting}
-            />
-          </div>
-          {error && <div className={styles.error}>{error}</div>}
-          <button
-            className={styles.connectBtn}
-            onClick={handleConnect}
-            disabled={isConnecting}
-          >
-            {isConnecting ? 'Connecting...' : 'Connect'}
+        {!serverInfo ? (
+          <button className={styles.primaryBtn} onClick={handleStartServer}>
+            Start Server
           </button>
-        </div>
+        ) : (
+          <div className={styles.serverInfo}>
+            <div className={styles.infoBox}>
+              <h4>Server Running</h4>
+              <div className={styles.infoRow}>
+                <strong>IP Address:</strong> {serverInfo.ip}
+              </div>
+              <div className={styles.infoRow}>
+                <strong>Port:</strong> {serverInfo.port}
+              </div>
+              <p className={styles.instruction}>
+                On your phone app, go to Manual mode and enter:
+              </p>
+              <div className={styles.connectionString}>
+                {serverInfo.ip}:{serverInfo.port}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {error && <div className={styles.error}>{error}</div>}
     </div>
   );
 }

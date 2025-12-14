@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import NetInfo from '@react-native-community/netinfo';
 import { QRCodeDisplay } from '@components/index.ts';
 import { useAppStore } from '@store/appStore';
 import { StreamingService } from '@services/index.ts';
@@ -28,15 +29,45 @@ export function ConnectScreen() {
   useEffect(() => {
     // Get local IP address for QR code
     getLocalIpAddress();
-  }, []);
+
+    // Set up StreamingService callbacks
+    StreamingService.setCallbacks({
+      onStatusChange: (status) => {
+        console.log('Status changed to:', status);
+        setConnectionStatus(status);
+        if (status === 'connected') {
+          setIsConnecting(false);
+        } else if (status === 'error') {
+          setIsConnecting(false);
+        }
+      },
+      onStatsUpdate: (fps, bitrate, dropped) => {
+        console.log(`Stats - FPS: ${fps}, Bitrate: ${bitrate}, Dropped: ${dropped}`);
+      },
+    });
+
+    return () => {
+      // Cleanup on unmount
+      StreamingService.setCallbacks({});
+    };
+  }, [setConnectionStatus]);
 
   const getLocalIpAddress = async () => {
     try {
-      // In real implementation, use react-native-network-info
-      // For now, use placeholder
-      setLocalIp('192.168.1.100');
+      const state = await NetInfo.fetch();
+      // Try to get IP address from WiFi or Ethernet connection
+      const details = state.details as any;
+      const ip = details?.ipAddress;
+      if (ip && typeof ip === 'string') {
+        setLocalIp(ip);
+        console.log('Local IP:', ip);
+      } else {
+        console.warn('Could not get local IP address');
+        setLocalIp(null);
+      }
     } catch (error) {
       console.error('Failed to get local IP:', error);
+      setLocalIp(null);
     }
   };
 
@@ -55,13 +86,12 @@ export function ConnectScreen() {
         parseInt(port, 10),
         videoSettings
       );
-      setConnectionStatus('connected');
+      // Status will be updated via the onStatusChange callback
     } catch (error) {
       console.error('Connection failed:', error);
       setConnectionStatus('error');
-      Alert.alert('Connection Failed', 'Could not connect to the desktop app. Please check the IP address and try again.');
-    } finally {
       setIsConnecting(false);
+      Alert.alert('Connection Failed', 'Could not connect to the desktop app. Please check the IP address and try again.');
     }
   };
 
@@ -83,25 +113,6 @@ export function ConnectScreen() {
         </Text>
       </View>
 
-      {/* Mode Selector */}
-      <View style={styles.modeSelector}>
-        <TouchableOpacity
-          style={[styles.modeButton, mode === 'qr' && styles.modeButtonActive]}
-          onPress={() => setMode('qr')}
-        >
-          <Text style={[styles.modeText, mode === 'qr' && styles.modeTextActive]}>
-            QR Code
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.modeButton, mode === 'manual' && styles.modeButtonActive]}
-          onPress={() => setMode('manual')}
-        >
-          <Text style={[styles.modeText, mode === 'manual' && styles.modeTextActive]}>
-            Manual
-          </Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Connection Content */}
       <View style={styles.content}>
@@ -121,12 +132,6 @@ export function ConnectScreen() {
               <Text style={styles.disconnectText}>Disconnect</Text>
             </TouchableOpacity>
           </View>
-        ) : mode === 'qr' ? (
-          localIp ? (
-            <QRCodeDisplay ipAddress={localIp} port={DEFAULT_PORT} />
-          ) : (
-            <ActivityIndicator size="large" color="#4CAF50" />
-          )
         ) : (
           <View style={styles.manualContainer}>
             <Text style={styles.inputLabel}>Desktop IP Address</Text>
@@ -173,13 +178,16 @@ export function ConnectScreen() {
       <View style={styles.instructions}>
         <Text style={styles.instructionsTitle}>How to connect:</Text>
         <Text style={styles.instructionStep}>
-          1. Open PenMedia on your desktop
+          1. Open PenMedia on your desktop and click "Start Server"
         </Text>
         <Text style={styles.instructionStep}>
-          2. {mode === 'qr' ? 'Scan the QR code above' : 'Enter the desktop IP address'}
+          2. Copy the desktop IP address shown on your computer
         </Text>
         <Text style={styles.instructionStep}>
-          3. Start streaming your camera
+          3. Enter the desktop IP address above and click Connect
+        </Text>
+        <Text style={styles.instructionStep}>
+          4. Start streaming your camera
         </Text>
       </View>
     </SafeAreaView>

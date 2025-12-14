@@ -17,6 +17,7 @@ import {
   PING_INTERVAL,
   PING_TIMEOUT,
 } from './constants';
+import * as console from "node:console";
 
 export interface ConnectionEvents {
   onStatusChange: (status: ConnectionStatus) => void;
@@ -189,6 +190,7 @@ export class WebSocketConnection extends BaseConnection {
 
           const originalOnMessage = this.events.onMessage;
           this.events.onMessage = (msg) => {
+              console.log({msg})
             if (msg.type === 'handshake_ack') {
               clearTimeout(handshakeTimeout);
               this.handleHandshakeAck(msg as HandshakeAckMessage);
@@ -205,15 +207,17 @@ export class WebSocketConnection extends BaseConnection {
 
       this.ws.onmessage = (event) => {
         try {
+            console.log({event})
           const message = decodeMessage(event.data);
+          console.log({message})
           this.handleMessage(message);
         } catch (error) {
+            console.log({error})
           this.events.onError(error as Error);
         }
       };
 
       this.ws.onerror = (_event) => {
-          console.log({_event})
         clearTimeout(timeout);
         this.setStatus('error');
         this.events.onError(new Error('WebSocket error'));

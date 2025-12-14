@@ -25,6 +25,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             connect_to_device,
+            get_connection_info,
             disconnect_from_device,
             start_server,
             stop_server,

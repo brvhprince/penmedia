@@ -7,7 +7,7 @@ use crate::protocol::{DeviceInfo, HandshakeAckMessage, MessageType, VideoSetting
 
 pub type WsStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct ConnectionInfo {
     pub session_id: String,
     pub device_info: DeviceInfo,

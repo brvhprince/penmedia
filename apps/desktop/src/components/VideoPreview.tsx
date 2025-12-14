@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react';
+import { listen } from '@tauri-apps/api/event';
 import { useAppStore } from '../store/appStore';
 import styles from './VideoPreview.module.css';
 
@@ -9,6 +10,33 @@ interface VideoPreviewProps {
 export function VideoPreview({ videoRef }: VideoPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { connectionStatus, connectedDevice, isVirtualCameraActive } = useAppStore();
+
+  // Listen for video frames
+  useEffect(() => {
+    if (connectionStatus !== 'connected') return;
+
+    const unlisten = listen<string>('video-frame', (event) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Decode base64 frame
+      const base64Data = event.payload;
+      const img = new Image();
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+      };
+      img.src = `data:image/jpeg;base64,${base64Data}`;
+    });
+
+    return () => {
+      unlisten.then(fn => fn());
+    };
+  }, [connectionStatus]);
 
   return (
     <div className={styles.container}>
