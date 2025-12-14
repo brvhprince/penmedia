@@ -44,6 +44,7 @@ export function VirtualCameraPanel() {
       await invoke('install_virtual_camera');
       await checkVirtualCamera();
     } catch (err) {
+        console.log({err})
       setError(err instanceof Error ? err.message : 'Installation failed');
     } finally {
       setIsInstalling(false);

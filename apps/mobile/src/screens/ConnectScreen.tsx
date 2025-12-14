@@ -9,9 +9,9 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { QRCodeDisplay } from '@components';
+import { QRCodeDisplay } from '@components/index.ts';
 import { useAppStore } from '@store/appStore';
-import { StreamingService } from '@services';
+import { StreamingService } from '@services/index.ts';
 import { DEFAULT_PORT } from '@penmedia/protocol';
 
 type ConnectionMode = 'qr' | 'manual';

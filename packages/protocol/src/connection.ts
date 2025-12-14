@@ -122,7 +122,7 @@ export abstract class BaseConnection {
     }
   }
 
-  protected handlePong(message: PongMessage): void {
+  protected handlePong(_message: PongMessage): void {
     this.latency = Date.now() - this.lastPingTime;
     this.events.onLatencyUpdate(this.latency);
   }
@@ -212,7 +212,8 @@ export class WebSocketConnection extends BaseConnection {
         }
       };
 
-      this.ws.onerror = (event) => {
+      this.ws.onerror = (_event) => {
+          console.log({_event})
         clearTimeout(timeout);
         this.setStatus('error');
         this.events.onError(new Error('WebSocket error'));

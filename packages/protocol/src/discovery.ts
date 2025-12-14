@@ -1,7 +1,5 @@
 import type { DeviceInfo } from '@penmedia/shared-types';
 import {
-  DISCOVERY_PORT,
-  DISCOVERY_BROADCAST_INTERVAL,
   DISCOVERY_MESSAGE,
   DISCOVERY_RESPONSE,
   DEFAULT_PORT,

@@ -33,6 +33,7 @@ export function ConnectionPanel() {
         connectedAt: Date.now(),
       });
     } catch (err) {
+        console.log({err})
       setError(err instanceof Error ? err.message : 'Connection failed');
       setConnectionStatus('error');
     } finally {
@@ -54,6 +55,7 @@ export function ConnectionPanel() {
       const serverInfo = await invoke<{ ip: string; port: number }>('start_server');
       console.log('Server started:', serverInfo);
     } catch (err) {
+        console.error({err})
       setError(err instanceof Error ? err.message : 'Failed to start server');
     }
   };

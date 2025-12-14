@@ -11,7 +11,9 @@ const config = {
             path.resolve(projectRoot, 'node_modules'),
             path.resolve(monorepoRoot, 'node_modules'),
         ],
-        disableHierarchicalLookup: true,
+        // disableHierarchicalLookup: true,
+        unstable_enableSymlinks: true,
+        unstable_enablePackageExports: true,
     },
 };
 

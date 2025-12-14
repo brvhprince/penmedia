@@ -1,5 +1,12 @@
 import type { FilterType, FilterSettings } from '@penmedia/shared-types';
 
+// ImageData type definition for non-browser environments
+export interface ImageData {
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+}
+
 export interface FilterProcessor {
   type: FilterType;
   name: string;

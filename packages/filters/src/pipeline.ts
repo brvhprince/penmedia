@@ -1,6 +1,6 @@
 import type { FilterType, FilterSettings } from '@penmedia/shared-types';
-import type { FilterProcessor, FilterPipeline } from './types';
-import { getFilter, filterRegistry } from './processors';
+import type { FilterProcessor, FilterPipeline, ImageData } from './types';
+import { getFilter } from './processors';
 
 export class ImageFilterPipeline implements FilterPipeline {
   filters: FilterProcessor[] = [];

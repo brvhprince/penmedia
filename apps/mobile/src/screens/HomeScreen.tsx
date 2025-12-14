@@ -2,9 +2,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View, Text, StatusBar, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Camera } from 'react-native-vision-camera';
-import { CameraPreview, ControlPanel, FilterSelector } from '@components';
+import { CameraPreview, ControlPanel, FilterSelector } from '@components/index.ts';
 import { useAppStore } from '@store/appStore';
-import { StreamingService, CameraService } from '@services';
+import { StreamingService, CameraService } from '@services/index.ts';
 import type { FilterSettings } from '@penmedia/shared-types';
 
 export function HomeScreen() {

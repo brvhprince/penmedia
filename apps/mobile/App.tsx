@@ -1,7 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Text, StyleSheet } from 'react-native';
+import {Text, StyleSheet} from 'react-native';
 import { HomeScreen, ConnectScreen, SettingsScreen } from '@/screens';
 
 const Tab = createBottomTabNavigator();
@@ -46,6 +46,7 @@ export default function App() {
                     <Tab.Screen name="Connect" component={ConnectScreen} />
                     <Tab.Screen name="Settings" component={SettingsScreen} />
                 </Tab.Navigator>
+
             </NavigationContainer>
         </SafeAreaProvider>
     );

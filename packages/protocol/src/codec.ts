@@ -3,6 +3,15 @@ import type { ProtocolMessage, MessageType } from '@penmedia/shared-types';
 // Message header format: [type: 1 byte][timestamp: 8 bytes][sequence: 4 bytes][payload length: 4 bytes]
 const HEADER_SIZE = 17;
 
+// TextDecoder polyfill for React Native
+const decodeText = (bytes: Uint8Array): string => {
+  if (typeof TextDecoder !== 'undefined') {
+    return new TextDecoder().decode(bytes);
+  }
+  // Fallback for React Native
+  return String.fromCharCode(...bytes);
+};
+
 const MESSAGE_TYPE_MAP: Record<MessageType, number> = {
   handshake: 0x01,
   handshake_ack: 0x02,
@@ -62,7 +71,7 @@ export function decodeMessage(buffer: ArrayBuffer): ProtocolMessage {
 
   // Read payload
   const payloadBytes = uint8View.slice(HEADER_SIZE, HEADER_SIZE + payloadLength);
-  const jsonPayload = new TextDecoder().decode(payloadBytes);
+  const jsonPayload = decodeText(payloadBytes);
   const payload = JSON.parse(jsonPayload);
 
   return {
